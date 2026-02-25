@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barbearia 301 - ERP Master v17</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; font-family: 'Inter', sans-serif; overflow: hidden; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
+        .sidebar-item { transition: 0.3s; cursor: pointer; border-radius: 8px; margin-bottom: 4px; padding: 0.8rem; display: flex; align-items: center; gap: 0.75rem; }
+        .sidebar-item:hover, .active-menu { background: #334155; color: #38bdf8; border-left: 4px solid #38bdf8; }
+        .grid-agenda { display: grid; border: 1px solid #1e293b; border-radius: 12px; overflow: hidden; }
+        .cell { padding: 10px; border: 1px solid #1e293b; text-align: center; font-size: 0.75rem; min-height: 45px; display: flex; align-items: center; justify-content: center; }
+        .time-col { background: #0f172a; font-weight: bold; color: #38bdf8; }
+        .booked { background: #ef4444; color: white; cursor: pointer; font-weight: bold; }
+        .free { background: #10b981; color: white; cursor: pointer; }
+        input, select { background: #1e293b !important; border: 1px solid #334155 !important; color: white !important; outline: none; }
+        .nota-fiscal { font-family: 'Courier New', Courier, monospace; background: #fff; color: #000; padding: 20px; width: 340px; margin: auto; border-radius: 2px; }
+        .btn-flutuante { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; border-radius: 50%; background: #38bdf8; color: #0f172a; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 10px 20px rgba(56, 189, 248, 0.4); z-index: 100; transition: 0.3s; }
+    </style>
+</head>
+<body class="flex h-screen p-4 gap-4 bg-slate-950">
+
+    <aside class="w-64 glass flex flex-col rounded-3xl border border-slate-800">
+        <div class="p-8 text-center border-b border-slate-800">
+            <div class="w-16 h-16 rounded-full mx-auto mb-3 border-2 border-sky-500 overflow-hidden">
+                <img src="logo.png" class="w-full h-full object-cover" onerror="this.src='https://cdn-icons-png.flaticon.com/512/301/301131.png'">
+            </div>
+            <p class="text-[10px] font-black text-sky-500 uppercase tracking-widest">Painel Admin</p>
+        </div>
+        <nav class="flex-1 p-4">
+            <div onclick="showSection('dashboard')" class="sidebar-item active-menu" id="menu-dashboard"><i class="fas fa-chart-line"></i> Dashboard</div>
+            <div onclick="showSection('agenda')" class="sidebar-item" id="menu-agenda"><i class="fas fa-calendar"></i> Agenda</div>
+            <div onclick="showSection('estoque')" class="sidebar-item" id="menu-estoque"><i class="fas fa-box"></i> Estoque & Itens</div>
+            <div onclick="showSection('relatorio')" class="sidebar-item text-emerald-400" id="menu-relatorio"><i class="fas fa-file-invoice-dollar"></i> Relatórios</div>
+            <div onclick="showSection('admin')" class="sidebar-item text-amber-400" id="menu-admin"><i class="fas fa-user-shield"></i> Ajustes Equipe</div>
+        </nav>
+        <button onclick="window.location.href='index.html'" class="m-6 p-4 rounded-xl bg-red-500/10 text-red-500 font-bold hover:bg-red-500 transition">SAIR</button>
+    </aside>
+
+    <main class="flex-1 glass rounded-3xl border border-slate-800 p-8 overflow-y-auto">
+        
+        <section id="sec-dashboard">
+            <h1 class="text-3xl font-bold mb-8 italic">Fluxo <span class="text-sky-500">Hoje</span></h1>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8" id="dash-cards"></div>
+            <div class="glass p-6 rounded-2xl border-l-4 border-emerald-500">
+                <h3 class="text-slate-400 text-xs font-bold uppercase tracking-widest">Bruto do Dia</h3>
+                <h2 class="text-4xl font-black" id="dash-total">R$ 0,00</h2>
+            </div>
+        </section>
+
+        <section id="sec-agenda" class="hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Agenda Global</h2>
+                <input type="date" id="data-seletor" onchange="renderTudo()" class="p-2 rounded-lg text-xs">
+            </div>
+            <div class="overflow-x-auto rounded-2xl border border-slate-800"><div class="grid-agenda" id="grid-agenda"></div></div>
+        </section>
+
+        <section id="sec-estoque" class="hidden">
+            <h2 class="text-2xl font-bold mb-6">Gestão de Catálogo</h2>
+            <div class="glass p-6 rounded-2xl mb-8 border border-emerald-500/20">
+                <h3 class="text-xs font-bold uppercase mb-4 text-emerald-400">Cadastrar Novo Item</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <input type="text" id="item-nome" placeholder="Nome do Item" class="p-2 rounded-lg">
+                    <input type="number" id="item-preco" placeholder="Preço R$" class="p-2 rounded-lg">
+                    <select id="item-tipo" class="p-2 rounded-lg">
+                        <option value="produto">Produto</option>
+                        <option value="servico">Serviço</option>
+                    </select>
+                </div>
+                <button onclick="salvarItem()" class="mt-4 bg-emerald-600 px-6 py-2 rounded-lg font-bold w-full md:w-auto">ADICIONAR AO SISTEMA</button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="glass p-4 rounded-xl">
+                    <h4 class="text-sky-400 font-bold mb-2">Produtos</h4>
+                    <table class="w-full text-xs"><tbody id="list-produtos"></tbody></table>
+                </div>
+                <div class="glass p-4 rounded-xl">
+                    <h4 class="text-emerald-400 font-bold mb-2">Serviços</h4>
+                    <table class="w-full text-xs"><tbody id="list-servicos"></tbody></table>
+                </div>
+            </div>
+        </section>
+
+        <section id="sec-relatorio" class="hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-emerald-400 italic">Relatório de Faturamento</h2>
+                <button onclick="enviarRelatorio()" class="bg-sky-600 px-6 py-2 rounded-xl font-bold text-xs uppercase">Notificar Admins</button>
+            </div>
+            <div id="relatorio-box" class="flex justify-center py-8"></div>
+        </section>
+
+        <section id="sec-admin" class="hidden">
+            <h2 class="text-2xl font-bold mb-8 text-amber-500 italic">Gestão da Unidade</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div class="glass p-6 rounded-2xl border border-sky-500/20">
+                    <h3 class="font-bold mb-4 uppercase text-[10px] text-sky-400">Novo Profissional</h3>
+                    <div class="space-y-3">
+                        <input type="text" id="p-nome" placeholder="Nome" class="w-full p-2 rounded-lg text-sm">
+                        <input type="number" id="p-com" placeholder="Comissão %" class="w-full p-2 rounded-lg text-sm">
+                        <input type="password" id="p-pass" placeholder="Senha" class="w-full p-2 rounded-lg text-sm">
+                        <button onclick="salvarProfissional()" class="w-full bg-sky-600 p-2 rounded-lg font-bold uppercase">Cadastrar Profissional</button>
+                    </div>
+                </div>
+                <div class="glass p-6 rounded-2xl border border-amber-500/20">
+                    <h3 class="font-bold mb-4 uppercase text-[10px] text-amber-400">Novo Admin</h3>
+                    <div class="space-y-3">
+                        <input type="text" id="a-user" placeholder="Login Admin" class="w-full p-2 rounded-lg text-sm">
+                        <input type="password" id="a-pass" placeholder="Senha" class="w-full p-2 rounded-lg text-sm">
+                        <input type="email" id="a-email" placeholder="E-mail" class="w-full p-2 rounded-lg text-sm">
+                        <input type="text" id="a-tel" placeholder="WhatsApp" class="w-full p-2 rounded-lg text-sm">
+                        <button onclick="salvarAdmin()" class="w-full bg-amber-600 p-2 rounded-lg font-bold uppercase">Cadastrar Admin</button>
+                    </div>
+                </div>
+            </div>
+            <div class="glass p-6 rounded-2xl">
+                <h3 class="text-xs font-bold mb-4 opacity-50 uppercase tracking-widest">Equipe & Acessos</h3>
+                <table class="w-full text-xs text-left"><tbody id="lista-equipe"></tbody></table>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="modal-venda" class="hidden fixed inset-0 z-[110] flex items-center justify-center bg-black/90 p-4">
+        <div class="glass p-8 rounded-3xl w-full max-w-sm border border-slate-700">
+            <h3 class="text-xl font-bold mb-6 text-sky-400 text-center uppercase">Fechar Atendimento</h3>
+            <div id="venda-info" class="text-[10px] text-slate-400 mb-4 text-center"></div>
+            <div class="space-y-4">
+                <select id="venda-prof" class="w-full p-3 rounded-xl"></select>
+                <select id="venda-item" class="w-full p-3 rounded-xl"></select>
+                <select id="venda-pag" class="w-full p-3 rounded-xl">
+                    <option value="pix">PIX</option><option value="dinheiro">Dinheiro</option><option value="debito">Débito</option><option value="credito">Crédito</option>
+                </select>
+                <button onclick="finalizarVendaReal()" class="w-full bg-emerald-600 p-4 rounded-xl font-bold uppercase">Confirmar Pagamento</button>
+                <button onclick="excluirHorario()" class="w-full text-red-500 text-[10px] uppercase font-bold mt-2">Apenas Excluir Horário</button>
+                <button onclick="document.getElementById('modal-venda').classList.add('hidden')" class="w-full text-slate-500 text-[10px] mt-2 uppercase">Voltar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const load = (key) => JSON.parse(localStorage.getItem(key)) || [];
+        const save = (key, data) => localStorage.setItem(key, JSON.stringify(data));
+        const horarios = ["08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00", "18:30", "19:00"];
+        let comandaAtiva = null;
+
+        window.onload = () => {
+            document.getElementById('data-seletor').valueAsDate = new Date();
+            renderTudo();
+        };
+
+        function showSection(id) {
+            document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
+            document.querySelectorAll('.sidebar-item').forEach(m => m.classList.remove('active-menu'));
+            document.getElementById('sec-' + id).classList.remove('hidden');
+            document.getElementById('menu-' + id).classList.add('active-menu');
+            if(id === 'relatorio') renderFiscal();
+        }
+
+        // --- AGENDA CLICÁVEL ---
+        function clicarAgenda(pId, h, data) {
+            const agenda = JSON.parse(localStorage.getItem('barbearia_agenda')) || {};
+            const cliente = agenda[data]?.[pId]?.[h];
+
+            if (cliente) {
+                comandaAtiva = { pId, h, data, cliente };
+                document.getElementById('venda-info').innerText = `Cliente: ${cliente} | Hora: ${h}`;
+                const profs = load('barbearia_profs');
+                const itens = [...load('barbearia_produtos'), ...load('barbearia_servicos')];
+                document.getElementById('venda-prof').innerHTML = profs.map(p => `<option value="${p.id}" ${p.id == pId ? 'selected' : ''}>${p.nome}</option>`).join('');
+                document.getElementById('venda-item').innerHTML = itens.map(i => `<option value="${i.id}">${i.nome} - R$ ${i.preco}</option>`).join('');
+                document.getElementById('modal-venda').classList.remove('hidden');
+            } else {
+                const n = prompt("Nome do Cliente:");
+                if (n) {
+                    if (!agenda[data]) agenda[data] = {};
+                    if (!agenda[data][pId]) agenda[data][pId] = {};
+                    agenda[data][pId][h] = n;
+                    localStorage.setItem('barbearia_agenda', JSON.stringify(agenda));
+                    renderTudo();
+                }
+            }
+        }
+
+        function excluirHorario() {
+            let agenda = JSON.parse(localStorage.getItem('barbearia_agenda')) || {};
+            delete agenda[comandaAtiva.data][comandaAtiva.pId][comandaAtiva.h];
+            localStorage.setItem('barbearia_agenda', JSON.stringify(agenda));
+            document.getElementById('modal-venda').classList.add('hidden');
+            renderTudo();
+        }
+
+        // --- VENDAS E CAIXA ---
+        function finalizarVendaReal() {
+            const pId = document.getElementById('venda-prof').value;
+            const iId = document.getElementById('venda-item').value;
+            const pag = document.getElementById('venda-pag').value;
+            const item = [...load('barbearia_produtos'), ...load('barbearia_servicos')].find(i => i.id == iId);
+            const hoje = new Date().toISOString().split('T')[0];
+
+            let historico = JSON.parse(localStorage.getItem('barbearia_historico')) || {};
+            if(!historico[hoje]) historico[hoje] = { pix:0, dinheiro:0, debito:0, credito:0, total:0 };
+            historico[hoje][pag] += item.preco;
+            historico[hoje].total += item.preco;
+            localStorage.setItem('barbearia_historico', JSON.stringify(historico));
+
+            let profs = load('barbearia_profs');
+            const idx = profs.findIndex(p => p.id == pId);
+            if(idx !== -1) profs[idx].faturamento += item.preco;
+            save('barbearia_profs', profs);
+
+            if(comandaAtiva) excluirHorario();
+            else document.getElementById('modal-venda').classList.add('hidden');
+            renderTudo();
+        }
+
+        // --- CADASTROS ---
+        function salvarProfissional() {
+            const n = document.getElementById('p-nome').value;
+            const c = document.getElementById('p-com').value;
+            const p = document.getElementById('p-pass').value;
+            if(!n || !c || !p) return alert("Preencha tudo!");
+            let profs = load('barbearia_profs');
+            profs.push({ id: Date.now(), nome: n, comissao: parseInt(c), pass: p, faturamento: 0 });
+            save('barbearia_profs', profs);
+            renderTudo();
+        }
+
+        function salvarAdmin() {
+            const u = document.getElementById('a-user').value;
+            const p = document.getElementById('a-pass').value;
+            const e = document.getElementById('a-email').value;
+            const t = document.getElementById('a-tel').value;
+            if(!u || !p || !e || !t) return alert("Preencha tudo!");
+            let admins = load('barbearia_admins_extra');
+            admins.push({ id: Date.now(), user: u, pass: p, email: e, tel: t });
+            save('barbearia_admins_extra', admins);
+            renderTudo();
+        }
+
+        function salvarItem() {
+            const n = document.getElementById('item-nome').value;
+            const p = parseFloat(document.getElementById('item-preco').value);
+            const t = document.getElementById('item-tipo').value;
+            if(!n || isNaN(p)) return alert("Dados inválidos!");
+            const key = t === 'produto' ? 'barbearia_produtos' : 'barbearia_servicos';
+            let list = load(key);
+            list.push({ id: Date.now(), nome: n, preco: p });
+            save(key, list);
+            renderTudo();
+        }
+
+        function excluir(key, id) {
+            if(confirm("Deseja excluir?")) {
+                save(key, load(key).filter(x => x.id != id));
+                renderTudo();
+            }
+        }
+
+        // --- RENDERS ---
+        function renderTudo() {
+            const profs = load('barbearia_profs');
+            const prods = load('barbearia_produtos');
+            const servs = load('barbearia_servicos');
+            const admins = load('barbearia_admins_extra');
+            const hoje = new Date().toISOString().split('T')[0];
+            const hist = JSON.parse(localStorage.getItem('barbearia_historico')) || {};
+            const dHoje = hist[hoje] || { pix:0, dinheiro:0, debito:0, credito:0, total:0 };
+
+            document.getElementById('dash-total').innerText = `R$ ${dHoje.total.toFixed(2)}`;
+            document.getElementById('dash-cards').innerHTML = `
+                <div class="glass p-3 rounded-xl border-b-2 border-sky-500 text-center text-[10px]">PIX<br><b>R$ ${dHoje.pix.toFixed(2)}</b></div>
+                <div class="glass p-3 rounded-xl border-b-2 border-emerald-500 text-center text-[10px]">DINHEIRO<br><b>R$ ${dHoje.dinheiro.toFixed(2)}</b></div>
+                <div class="glass p-3 rounded-xl border-b-2 border-purple-500 text-center text-[10px]">DÉBITO<br><b>R$ ${dHoje.debito.toFixed(2)}</b></div>
+                <div class="glass p-3 rounded-xl border-b-2 border-orange-500 text-center text-[10px]">CRÉDITO<br><b>R$ ${dHoje.credito.toFixed(2)}</b></div>`;
+
+            const grid = document.getElementById('grid-agenda');
+            grid.style.gridTemplateColumns = `80px repeat(${profs.length || 1}, 1fr)`;
+            grid.innerHTML = `<div class="cell bg-slate-800 font-bold">HORA</div>` + profs.map(p => `<div class="cell bg-slate-800 text-[10px] font-bold uppercase">${p.nome.split(' ')[0]}</div>`).join('');
+            
+            const agenda = JSON.parse(localStorage.getItem('barbearia_agenda')) || {};
+            const dataSel = document.getElementById('data-seletor').value;
+            horarios.forEach(h => {
+                grid.innerHTML += `<div class="cell time-col">${h}</div>`;
+                profs.forEach(p => {
+                    const res = agenda[dataSel]?.[p.id]?.[h];
+                    grid.innerHTML += `<div class="cell ${res ? 'booked' : 'free'}" onclick="clicarAgenda(${p.id}, '${h}', '${dataSel}')">${res || 'LIVRE'}</div>`;
+                });
+            });
+
+            document.getElementById('list-produtos').innerHTML = prods.map(p => `<tr><td>${p.nome}</td><td>R$ ${p.preco}</td><td class="text-right"><button onclick="excluir('barbearia_produtos', ${p.id})" class="text-red-500 p-1"><i class="fas fa-trash"></i></button></td></tr>`).join('');
+            document.getElementById('list-servicos').innerHTML = servs.map(s => `<tr><td>${s.nome}</td><td>R$ ${s.preco}</td><td class="text-right"><button onclick="excluir('barbearia_servicos', ${s.id})" class="text-red-500 p-1"><i class="fas fa-trash"></i></button></td></tr>`).join('');
+            
+            document.getElementById('lista-equipe').innerHTML = 
+                admins.map(a => `<tr class="border-b border-slate-900"><td class="py-2 text-amber-500">ADMIN</td><td>${a.user}</td><td>${a.tel}</td><td class="text-right"><button onclick="excluir('barbearia_admins_extra', ${a.id})" class="text-red-500 p-1"><i class="fas fa-trash"></i></button></td></tr>`).join('') +
+                profs.map(p => `<tr class="border-b border-slate-900"><td class="py-2 text-sky-500">PROF</td><td>${p.nome}</td><td>${p.comissao}%</td><td class="text-right"><button onclick="excluir('barbearia_profs', ${p.id})" class="text-red-500 p-1"><i class="fas fa-trash"></i></button></td></tr>`).join('');
+        }
+
+        function renderFiscal() {
+            const hist = JSON.parse(localStorage.getItem('barbearia_historico')) || {};
+            const hoje = new Date().toISOString().split('T')[0];
+            const dHoje = hist[hoje] || { pix:0, dinheiro:0, debito:0, credito:0, total:0 };
+            
+            let tSemana = 0, tMes = 0;
+            const datas = Object.keys(hist).sort().reverse();
+            datas.slice(0, 7).forEach(d => tSemana += hist[d].total);
+            datas.slice(0, 30).forEach(d => tMes += hist[d].total);
+
+            document.getElementById('relatorio-box').innerHTML = `
+                <div class="nota-fiscal text-black">
+                    <p class="text-center font-bold">BARBEARIA 301</p>
+                    <hr class="border-black my-2 border-dashed">
+                    <p class="font-bold">HOJE (${hoje})</p>
+                    <p>TOTAL PIX: R$ ${dHoje.pix.toFixed(2)}</p>
+                    <p>TOTAL DINH: R$ ${dHoje.dinheiro.toFixed(2)}</p>
+                    <p>TOTAL DIA: R$ ${dHoje.total.toFixed(2)}</p>
+                    <hr class="border-black my-2 border-dashed">
+                    <p class="font-bold">PONTUALIDADE</p>
+                    <p>ÚLTIMOS 7 DIAS: R$ ${tSemana.toFixed(2)}</p>
+                    <p>ÚLTIMOS 30 DIAS: R$ ${tMes.toFixed(2)}</p>
+                    <hr class="border-black my-2 border-dashed">
+                    <p class="text-center font-bold">COMISSÕES</p>
+                    ${load('barbearia_profs').map(p => `<p>${p.nome}: R$ ${(p.faturamento * p.comissao / 100).toFixed(2)}</p>`).join('')}
+                </div>`;
+        }
+
+        function enviarRelatorio() {
+            alert("Relatórios enviados aos administradores!");
+        }
+    </script>
+</body>
+</html>

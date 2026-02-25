@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barbearia 301 - Acesso</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        html, body { margin: 0; padding: 0; height: 100%; width: 100%; background-color: #020617; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            display: flex; align-items: center; justify-content: center;
+            background-image: url('capa.jpg') !important;
+            background-size: cover; background-position: center; background-repeat: no-repeat; background-attachment: fixed;
+        }
+        .card-login { 
+            background: rgba(0, 0, 0, 0.9); border: 1px solid #38bdf8; 
+            box-shadow: 0 0 60px rgba(0, 0, 0, 0.8); width: 90%; max-width: 420px;
+            padding: 2.5rem; border-radius: 3rem; text-align: center; backdrop-filter: blur(10px);
+        }
+        .logo-circle { 
+            width: 120px; height: 120px; border-radius: 50%; overflow: hidden; 
+            border: 3px solid #38bdf8; margin: 0 auto 1.5rem; background: #000;
+        }
+        .logo-circle img { width: 100%; height: 100%; object-fit: cover; }
+        .input-group { position: relative; margin-bottom: 1rem; }
+        .input-group i { position: absolute; left: 1.25rem; top: 50%; transform: translateY(-50%); color: #38bdf8; }
+        .input-field { 
+            background: #0f172a !important; border: 1px solid #1e293b !important; 
+            color: #f8fafc !important; width: 100%; padding: 0.9rem 1rem 0.9rem 3.5rem;
+            border-radius: 1.25rem; outline: none; transition: 0.3s;
+        }
+        .tabs { display: flex; gap: 8px; background: #0f172a; padding: 5px; border-radius: 1.25rem; margin-bottom: 1.5rem; }
+        .tab-btn { flex: 1; padding: 10px 0; border-radius: 1rem; font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; }
+        .active-tab { background: #38bdf8; color: #020617 !important; }
+        .btn-principal {
+            width: 100%; background: #38bdf8; color: #020617; padding: 1rem; 
+            border-radius: 1.25rem; font-weight: 900; text-transform: uppercase; letter-spacing: 2px;
+        }
+        /* Estilo dos ícones sociais */
+        .social-icon { transition: 0.3s; font-size: 24px; }
+        .social-icon:hover { transform: scale(1.2); }
+        .icon-ig { color: #E1306C; }
+        .icon-wa { color: #25D366; }
+    </style>
+</head>
+<body>
+
+    <div class="card-login">
+        <div class="logo-circle"><img src="logo.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/301/301131.png'"></div>
+        
+        <div id="box-login">
+            <h2 class="text-xl font-black text-white mb-6 uppercase italic">Barbearia 301</h2>
+            <div class="tabs">
+                <button onclick="setTipo('cliente')" id="btn-cliente" class="tab-btn active-tab">Cliente</button>
+                <button onclick="setTipo('prof')" id="btn-prof" class="tab-btn">Barbeiro</button>
+                <button onclick="setTipo('admin')" id="btn-admin" class="tab-btn">Admin</button>
+            </div>
+            <div class="space-y-2">
+                <div class="input-group"><input type="text" id="user" class="input-field" placeholder="Usuário"><i class="fas fa-user"></i></div>
+                <div class="input-group"><input type="password" id="pass" class="input-field" placeholder="Senha"><i class="fas fa-lock"></i></div>
+                <button onclick="validarAcesso()" class="btn-principal">Entrar</button>
+            </div>
+            
+            <p class="text-slate-500 text-[10px] mt-6 font-bold uppercase tracking-widest">
+                Novo por aqui? <a href="#" onclick="toggleTela('cadastro')" class="text-sky-400">Crie sua conta</a>
+            </p>
+
+            <hr class="my-6 border-slate-800">
+
+            <div class="flex justify-center gap-8 items-center">
+                <a href="https://www.instagram.com/barbearia.301/" target="_blank" class="social-icon icon-ig">
+                    <i class="fab fa-instagram"></i>
+                </a>
+                
+                <a href="https://l.instagram.com/?u=https%3A%2F%2Fwa.me%2F5561991996040%3Futm_source%3Dig%26utm_medium%3Dsocial%26utm_content%3Dlink_in_bio%26fbclid%3DPAZXh0bgNhZW0CMTEAc3J0YwZhcHBfaWQMMjU2MjgxMDQwNTU4AAGnjpYA2Z0mUNPcPsJDRcVOGSV35ROWgSjCj7enXrXAS0MIwAy2Hz_9ncbaKrc_aem_Iddiu3mOuyHOxqIKV43A_w&e=AT7jGAbydXS5McyzQ57PLv-3bmhr26dP4vfN-9kcV9hyshyWwipuhY8JXJp7_3i9NEq5MBRlKxKq0mmnVRsDnYuIrgu1oNRtwlHgjr0WLWxNo2FgnKIx2R_xEw" target="_blank" class="social-icon icon-wa">
+                    <i class="fab fa-whatsapp"></i>
+                </a>
+            </div>
+        </div>
+
+        <div id="box-cadastro" class="hidden">
+            <h2 class="text-xl font-black text-sky-400 mb-6 uppercase">Cadastrar-se</h2>
+            <div class="space-y-2">
+                <div class="input-group"><input type="text" id="cad-nome" class="input-field" placeholder="Nome Completo"><i class="fas fa-id-card"></i></div>
+                <div class="input-group"><input type="text" id="cad-tel" class="input-field" placeholder="WhatsApp"><i class="fas fa-whatsapp"></i></div>
+                <div class="input-group"><input type="password" id="cad-pass" class="input-field" placeholder="Criar Senha"><i class="fas fa-key"></i></div>
+                <button onclick="registrarCliente()" class="btn-principal">Finalizar Cadastro</button>
+            </div>
+            <button onclick="toggleTela('login')" class="text-slate-500 text-[10px] mt-6 font-bold uppercase tracking-widest">Voltar para o Login</button>
+        </div>
+    </div>
+
+    <script>
+        // ... Lógica de script anterior mantida ...
+        let tipoAcesso = 'cliente';
+        function setTipo(tipo) {
+            tipoAcesso = tipo;
+            ['cliente', 'prof', 'admin'].forEach(t => document.getElementById('btn-' + t).classList.remove('active-tab'));
+            document.getElementById('btn-' + tipo).classList.add('active-tab');
+        }
+        function toggleTela(tela) {
+            if(tela === 'cadastro') {
+                document.getElementById('box-login').classList.add('hidden');
+                document.getElementById('box-cadastro').classList.remove('hidden');
+            } else {
+                document.getElementById('box-login').classList.remove('hidden');
+                document.getElementById('box-cadastro').classList.add('hidden');
+            }
+        }
+        function validarAcesso() {
+            const u = document.getElementById('user').value.trim();
+            const p = document.getElementById('pass').value.trim();
+            if (!u || !p) return alert("Preencha tudo!");
+            if (tipoAcesso === 'admin') {
+                const extras = JSON.parse(localStorage.getItem('barbearia_admins_extra')) || [];
+                if ((u === 'admin' && p === 'admin') || extras.find(a => a.user === u && a.pass === p)) {
+                    window.location.href = 'admin.html';
+                } else alert("Admin incorreto!");
+            } else if (tipoAcesso === 'prof') {
+                const profs = JSON.parse(localStorage.getItem('barbearia_profs')) || [];
+                const b = profs.find(x => x.nome === u && x.pass === p);
+                if (b) {
+                    localStorage.setItem('prof_logado_id', b.id);
+                    window.location.href = 'profissional.html';
+                } else alert("Barbeiro não encontrado!");
+            } else window.location.href = 'cliente.html';
+        }
+        function registrarCliente() {
+            const nome = document.getElementById('cad-nome').value.trim();
+            if(!nome) return alert("Preencha o nome!");
+            alert("Cadastro realizado! Agora faça login.");
+            toggleTela('login');
+        }
+    </script>
+</body>
+</html>

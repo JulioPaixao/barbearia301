@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agendamento - Barbearia 301</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { background-color: #020617; color: #f8fafc; font-family: 'Inter', sans-serif; }
+        .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(56, 189, 248, 0.2); }
+        .card-selecao { transition: 0.3s; cursor: pointer; border: 2px solid transparent; }
+        .card-selecao:hover { transform: translateY(-3px); background: rgba(56, 189, 248, 0.05); }
+        .selected { border-color: #38bdf8 !important; background: rgba(56, 189, 248, 0.1) !important; }
+        .slot-hora { transition: 0.2s; cursor: pointer; border: 1px solid #1e293b; text-align: center; padding: 10px; border-radius: 12px; font-size: 12px; }
+        .slot-hora:hover:not(.ocupado) { background: #38bdf8; color: #020617; font-weight: bold; }
+        .ocupado { background: #1e293b; color: #475569; cursor: not-allowed; opacity: 0.5; }
+        input, select { background: #0f172a !important; border: 1px solid #1e293b !important; color: white !important; outline: none; }
+    </style>
+</head>
+<body class="pb-20">
+
+    <header class="p-6 glass sticky top-0 z-50 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <img src="logo.png" class="w-10 h-10 rounded-full border border-sky-500" onerror="this.src='https://cdn-icons-png.flaticon.com/512/301/301131.png'">
+            <h1 class="text-lg font-black italic text-white uppercase tracking-tighter">Barbearia 301</h1>
+        </div>
+        <button onclick="window.location.href='index.html'" class="text-slate-400"><i class="fas fa-sign-out-alt"></i></button>
+    </header>
+
+    <main class="max-w-2xl mx-auto p-6 space-y-8">
+        
+        <section>
+            <h2 class="text-2xl font-bold">Agende seu <span class="text-sky-400">Horário</span></h2>
+            <p class="text-slate-400 text-sm">Rápido, fácil e sem filas.</p>
+        </section>
+
+        <section>
+            <h3 class="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">1. Escolha o Serviço</h3>
+            <div id="lista-servicos" class="grid grid-cols-1 gap-3">
+                </div>
+        </section>
+
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <h3 class="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">2. Data</h3>
+                <input type="date" id="data-agenda" onchange="renderHorarios()" class="w-full p-4 rounded-2xl">
+            </div>
+            <div>
+                <h3 class="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">3. Barbeiro</h3>
+                <select id="select-barbeiro" onchange="renderHorarios()" class="w-full p-4 rounded-2xl">
+                    </select>
+            </div>
+        </section>
+
+        <section>
+            <h3 class="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">4. Horários Disponíveis</h3>
+            <div id="grade-horarios" class="grid grid-cols-4 gap-3">
+                </div>
+        </section>
+
+        <button onclick="finalizarAgendamento()" class="w-full bg-sky-500 hover:bg-sky-400 p-5 rounded-2xl font-black text-slate-900 uppercase tracking-widest transition shadow-lg shadow-sky-500/20">
+            Confirmar Agendamento
+        </button>
+
+    </main>
+
+    <script>
+        // CARREGAMENTO DE DADOS REAIS DO LOCALSTORAGE
+        const getDB = (key) => JSON.parse(localStorage.getItem(key)) || [];
+        
+        const horariosBase = ["08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00", "18:30", "19:00"];
+        
+        let selecao = { servico: null, barbeiroId: null, hora: null };
+
+        window.onload = () => {
+            // Data mínima = hoje
+            document.getElementById('data-agenda').min = new Date().toISOString().split('T')[0];
+            renderServicos();
+            renderBarbeiros();
+        };
+
+        function renderServicos() {
+            const servicos = getDB('barbearia_servicos');
+            const container = document.getElementById('lista-servicos');
+            
+            if(servicos.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-500 italic">Nenhum serviço cadastrado no sistema.</p>`;
+                return;
+            }
+
+            container.innerHTML = servicos.map(s => `
+                <div class="glass p-4 rounded-2xl card-selecao flex justify-between items-center" id="serv-${s.id}" onclick="setServico(${s.id}, '${s.nome}')">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-cut text-sky-500"></i>
+                        <span class="font-bold text-sm text-white">${s.nome}</span>
+                    </div>
+                    <span class="text-emerald-400 font-bold">R$ ${s.preco.toFixed(2)}</span>
+                </div>
+            `).join('');
+        }
+
+        function renderBarbeiros() {
+            const profs = getDB('barbearia_profs');
+            const select = document.getElementById('select-barbeiro');
+            
+            select.innerHTML = `<option value="">Selecione o Barbeiro</option>` + 
+                profs.map(p => `<option value="${p.id}">${p.nome}</option>`).join('');
+        }
+
+        function setServico(id, nome) {
+            getDB('barbearia_servicos').forEach(s => {
+                const el = document.getElementById(`serv-${s.id}`);
+                if(el) el.classList.remove('selected');
+            });
+            document.getElementById(`serv-${id}`).classList.add('selected');
+            selecao.servico = nome;
+        }
+
+        function renderHorarios() {
+            const data = document.getElementById('data-agenda').value;
+            const profId = document.getElementById('select-barbeiro').value;
+            const container = document.getElementById('grade-horarios');
+
+            if (!data || !profId) {
+                container.innerHTML = `<p class="col-span-4 text-center text-[10px] text-slate-600 italic">Escolha data e barbeiro</p>`;
+                return;
+            }
+
+            // Busca agenda global para ver o que está ocupado
+            const agendaGlobal = JSON.parse(localStorage.getItem('barbearia_agenda')) || {};
+            const ocupados = agendaGlobal[data]?.[profId] || {};
+
+            container.innerHTML = horariosBase.map(h => {
+                const isOcupado = ocupados[h];
+                return `
+                    <div class="slot-hora ${isOcupado ? 'ocupado' : ''}" 
+                         id="slot-${h.replace(':','')}"
+                         onclick="${isOcupado ? '' : `setHora('${h}')`}">
+                        ${h}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function setHora(h) {
+            horariosBase.forEach(hr => {
+                const el = document.getElementById(`slot-${hr.replace(':','')}`);
+                if(el) el.classList.remove('selected');
+            });
+            document.getElementById(`slot-${h.replace(':','')}`).classList.add('selected');
+            selecao.hora = h;
+        }
+
+        function finalizarAgendamento() {
+            const data = document.getElementById('data-agenda').value;
+            const profId = document.getElementById('select-barbeiro').value;
+            
+            if(!selecao.servico || !data || !profId || !selecao.hora) {
+                return alert("Por favor, selecione todos os campos!");
+            }
+
+            const nomeCliente = prompt("Informe seu nome para confirmar:");
+            if(!nomeCliente) return;
+
+            // SALVAR NA AGENDA GLOBAL
+            let agenda = JSON.parse(localStorage.getItem('barbearia_agenda')) || {};
+            if(!agenda[data]) agenda[data] = {};
+            if(!agenda[data][profId]) agenda[data][profId] = {};
+            
+            agenda[data][profId][selecao.hora] = `${nomeCliente} (${selecao.servico})`;
+            
+            localStorage.setItem('barbearia_agenda', JSON.stringify(agenda));
+
+            alert("Sucesso! Seu horário foi reservado.");
+            window.location.reload();
+        }
+    </script>
+</body>
+</html>

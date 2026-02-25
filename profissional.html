@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Profissional - Barbearia 301</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { background-color: #020617; color: #f8fafc; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(56, 189, 248, 0.2); }
+        .sidebar-item { transition: 0.3s; cursor: pointer; border-radius: 12px; padding: 1rem; display: flex; align-items: center; gap: 0.75rem; margin-bottom: 5px; font-size: 13px; font-weight: 600; }
+        .sidebar-item:hover, .active-menu { background: #1e293b; color: #38bdf8; border-left: 4px solid #38bdf8; }
+        
+        /* Grid da Agenda */
+        .grid-agenda { display: grid; grid-template-columns: 80px 1fr; border: 1px solid #1e293b; border-radius: 15px; overflow: hidden; }
+        .cell { padding: 12px; border: 1px solid #1e293b; text-align: center; font-size: 0.75rem; min-height: 50px; display: flex; align-items: center; justify-content: center; }
+        .time-col { background: #0f172a; font-weight: bold; color: #38bdf8; }
+        .booked { background: #ef4444; color: white; cursor: pointer; font-weight: bold; animation: pulse 2s infinite; }
+        .free { background: #10b981; color: white; cursor: pointer; }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.8; }
+            100% { opacity: 1; }
+        }
+
+        input, select { background: #0f172a !important; border: 1px solid #1e293b !important; color: white !important; outline: none; border-radius: 12px; padding: 10px; }
+        .btn-venda { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; border-radius: 50%; background: #38bdf8; color: #020617; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 10px 20px rgba(56, 189, 248, 0.3); z-index: 100; transition: 0.3s; }
+        .btn-venda:hover { transform: scale(1.1); }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+    <aside class="w-64 glass m-4 rounded-3xl flex flex-col border border-slate-800 hidden md:flex">
+        <div class="p-8 text-center border-b border-slate-800">
+            <div class="relative w-20 h-20 mx-auto mb-3">
+                <img id="foto-preview-side" src="" class="w-full h-full rounded-full border-2 border-sky-500 object-cover" onerror="this.src='https://cdn-icons-png.flaticon.com/512/301/301131.png'">
+            </div>
+            <h2 id="nome-side" class="font-bold text-white text-sm uppercase tracking-tighter">Carregando...</h2>
+        </div>
+        <nav class="flex-1 p-4">
+            <div onclick="showSec('agenda')" id="menu-agenda" class="sidebar-item active-menu"><i class="fas fa-calendar-alt"></i> Agenda de Hoje</div>
+            <div onclick="showSec('financeiro')" id="menu-financeiro" class="sidebar-item"><i class="fas fa-wallet"></i> Meus Ganhos</div>
+            <div onclick="showSec('perfil')" id="menu-perfil" class="sidebar-item"><i class="fas fa-user-cog"></i> Configurações</div>
+        </nav>
+        <button onclick="logout()" class="m-6 p-4 rounded-xl bg-red-500/10 text-red-500 font-bold hover:bg-red-500 hover:text-white transition uppercase text-[10px]">Sair</button>
+    </aside>
+
+    <main class="flex-1 p-4 md:p-8 overflow-y-auto">
+        
+        <section id="sec-agenda">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                <div>
+                    <h1 class="text-3xl font-black italic uppercase tracking-tighter">Minha <span class="text-sky-500">Agenda</span></h1>
+                    <p class="text-slate-500 text-xs font-bold uppercase">Gerenciamento em tempo real</p>
+                </div>
+                <input type="date" id="data-seletor" onchange="renderAgenda()" class="text-xs w-full md:w-auto">
+            </div>
+            <div class="grid-agenda" id="grid-agenda"></div>
+        </section>
+
+        <section id="sec-financeiro" class="hidden">
+            <h1 class="text-3xl font-black italic uppercase mb-8">Meu <span class="text-emerald-500">Faturamento</span></h1>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="glass p-6 rounded-3xl border-l-4 border-slate-600">
+                    <p class="text-slate-400 text-[10px] font-bold uppercase mb-1">Total Bruto</p>
+                    <h2 id="fat-bruto" class="text-2xl font-black text-white">R$ 0,00</h2>
+                </div>
+                <div class="glass p-6 rounded-3xl border-l-4 border-emerald-500">
+                    <p class="text-emerald-400 text-[10px] font-bold uppercase mb-1">Minha Parte (Líquido)</p>
+                    <h2 id="fat-comissao" class="text-2xl font-black text-emerald-400">R$ 0,00</h2>
+                </div>
+                <div class="glass p-6 rounded-3xl border-l-4 border-sky-500">
+                    <p class="text-sky-400 text-[10px] font-bold uppercase mb-1">Parte da Casa</p>
+                    <h2 id="fat-casa" class="text-2xl font-black text-sky-400">R$ 0,00</h2>
+                </div>
+            </div>
+        </section>
+
+        <section id="sec-perfil" class="hidden max-w-lg mx-auto">
+            <h1 class="text-3xl font-black italic uppercase mb-8 text-center">Configurar <span class="text-sky-500">Perfil</span></h1>
+            <div class="glass p-8 rounded-3xl space-y-4">
+                <div class="text-center mb-6">
+                    <div class="relative w-32 h-32 mx-auto cursor-pointer group" onclick="document.getElementById('input-foto').click()">
+                        <img id="foto-preview-form" src="" class="w-full h-full rounded-full border-4 border-sky-500 object-cover transition group-hover:opacity-50" onerror="this.src='https://cdn-icons-png.flaticon.com/512/301/301131.png'">
+                        <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                            <i class="fas fa-camera text-2xl text-white"></i>
+                        </div>
+                    </div>
+                    <p class="text-[10px] text-slate-500 mt-3 uppercase font-bold">Toque para carregar foto</p>
+                    <input type="file" id="input-foto" accept="image/*" class="hidden" onchange="processarFoto(this)">
+                </div>
+                <div class="space-y-3">
+                    <input type="text" id="edit-nome" placeholder="Seu Nome" class="w-full">
+                    <input type="email" id="edit-email" placeholder="Seu E-mail" class="w-full">
+                    <input type="text" id="edit-tel" placeholder="Seu WhatsApp" class="w-full">
+                    <button onclick="salvarPerfil()" class="w-full bg-sky-500 p-4 rounded-xl text-slate-900 font-black uppercase tracking-widest mt-4">Salvar Dados</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <button onclick="abrirModalVenda()" class="btn-venda"><i class="fas fa-plus"></i></button>
+
+    <div id="modal-venda" class="hidden fixed inset-0 z-[110] flex items-center justify-center bg-black/95 p-4">
+        <div class="glass p-8 rounded-3xl w-full max-w-sm border border-slate-700">
+            <h3 class="text-xl font-bold mb-6 text-sky-400 uppercase italic">Lançar Trabalho</h3>
+            <div class="space-y-4">
+                <select id="venda-item" class="w-full"></select>
+                <select id="venda-pag" class="w-full">
+                    <option value="pix">PIX</option>
+                    <option value="dinheiro">Dinheiro</option>
+                    <option value="debito">Cartão Débito</option>
+                    <option value="credito">Cartão Crédito</option>
+                </select>
+                <button onclick="finalizarVenda()" class="w-full bg-emerald-500 p-4 rounded-xl font-black text-slate-900 uppercase">Finalizar</button>
+                <button onclick="document.getElementById('modal-venda').classList.add('hidden')" class="w-full text-slate-500 text-[10px] mt-2 uppercase font-bold">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const horarios = ["08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00", "18:30", "19:00"];
+        
+        let profId = localStorage.getItem('prof_logado_id');
+        let profsDB = JSON.parse(localStorage.getItem('barbearia_profs')) || [];
+        let meuPerfil = profsDB.find(p => p.id == profId);
+        let fotoBase64 = "";
+
+        if(!meuPerfil) window.location.href = 'index.html';
+
+        window.onload = () => {
+            document.getElementById('data-seletor').valueAsDate = new Date();
+            atualizarUI();
+            renderAgenda();
+        };
+
+        // --- SINCRONIZAÇÃO EM TEMPO REAL ---
+        window.addEventListener('storage', (event) => {
+            if (event.key === 'barbearia_agenda' || event.key === 'barbearia_profs') {
+                profsDB = JSON.parse(localStorage.getItem('barbearia_profs')) || [];
+                meuPerfil = profsDB.find(p => p.id == profId);
+                renderAgenda();
+                atualizarUI();
+            }
+        });
+
+        function showSec(id) {
+            ['agenda', 'financeiro', 'perfil'].forEach(s => {
+                document.getElementById('sec-' + s).classList.add('hidden');
+                document.getElementById('menu-' + s).classList.remove('active-menu');
+            });
+            document.getElementById('sec-' + id).classList.remove('hidden');
+            document.getElementById('menu-' + id).classList.add('active-menu');
+        }
+
+        function atualizarUI() {
+            document.getElementById('nome-side').innerText = meuPerfil.nome;
+            document.getElementById('foto-preview-side').src = meuPerfil.foto || '';
+            document.getElementById('foto-preview-form').src = meuPerfil.foto || '';
+            document.getElementById('edit-nome').value = meuPerfil.nome;
+            document.getElementById('edit-email').value = meuPerfil.email || '';
+            document.getElementById('edit-tel').value = meuPerfil.tel || '';
+
+            const bruto = meuPerfil.faturamento || 0;
+            const comissao = (bruto * (meuPerfil.comissao || 0) / 100);
+            document.getElementById('fat-bruto').innerText = `R$ ${bruto.toFixed(2)}`;
+            document.getElementById('fat-comissao').innerText = `R$ ${comissao.toFixed(2)}`;
+            document.getElementById('fat-casa').innerText = `R$ ${(bruto - comissao).toFixed(2)}`;
+        }
+
+        function processarFoto(input) {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    fotoBase64 = e.target.result;
+                    document.getElementById('foto-preview-form').src = fotoBase64;
+                    document.getElementById('foto-preview-side').src = fotoBase64;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function salvarPerfil() {
+            const idx = profsDB.findIndex(p => p.id == profId);
+            meuPerfil.nome = document.getElementById('edit-nome').value;
+            meuPerfil.email = document.getElementById('edit-email').value;
+            meuPerfil.tel = document.getElementById('edit-tel').value;
+            if(fotoBase64) meuPerfil.foto = fotoBase64;
+            
+            profsDB[idx] = meuPerfil;
+            localStorage.setItem('barbearia_profs', JSON.stringify(profsDB));
+            alert("Perfil Atualizado!");
+            atualizarUI();
+        }
+
+        function renderAgenda() {
+            const grid = document.getElementById('grid-agenda');
+            const data = document.getElementById('data-seletor').value;
+            const agenda = JSON.parse(localStorage.getItem('barbearia_agenda')) || {};
+            const meusHorarios = agenda[data]?.[profId] || {};
+
+            grid.innerHTML = "";
+            horarios.forEach(h => {
+                const cliente = meusHorarios[h];
+                grid.innerHTML += `<div class="cell time-col">${h}</div>`;
+                if(cliente) {
+                    grid.innerHTML += `<div class="cell booked" onclick="finalizarAtendimento('${h}', '${cliente}')">${cliente}</div>`;
+                } else {
+                    grid.innerHTML += `<div class="cell free" onclick="marcarManual('${h}')">LIVRE</div>`;
+                }
+            });
+        }
+
+        function marcarManual(h) {
+            const n = prompt("Nome do Cliente:");
+            if(!n) return;
+            const d = document.getElementById('data-seletor').value;
+            let agenda = JSON.parse(localStorage.getItem('barbearia_agenda')) || {};
+            if(!agenda[d]) agenda[d] = {};
+            if(!agenda[d][profId]) agenda[d][profId] = {};
+            agenda[d][profId][h] = n;
+            localStorage.setItem('barbearia_agenda', JSON.stringify(agenda));
+            renderAgenda();
+        }
+
+        function abrirModalVenda() {
+            const servicos = JSON.parse(localStorage.getItem('barbearia_servicos')) || [];
+            const produtos = JSON.parse(localStorage.getItem('barbearia_produtos')) || [];
+            const itens = [...servicos, ...produtos];
+            document.getElementById('venda-item').innerHTML = itens.map(i => `<option value="${i.preco}">${i.nome} - R$ ${i.preco}</option>`).join('');
+            document.getElementById('modal-venda').classList.remove('hidden');
+        }
+
+        function finalizarVenda() {
+            const preco = parseFloat(document.getElementById('venda-item').value);
+            const pag = document.getElementById('venda-pag').value;
+            
+            let caixa = JSON.parse(localStorage.getItem('barbearia_caixa')) || { pix:0, dinheiro:0, debito:0, credito:0 };
+            caixa[pag] += preco;
+            localStorage.setItem('barbearia_caixa', JSON.stringify(caixa));
+
+            const idx = profsDB.findIndex(p => p.id == profId);
+            meuPerfil.faturamento = (meuPerfil.faturamento || 0) + preco;
+            profsDB[idx] = meuPerfil;
+            localStorage.setItem('barbearia_profs', JSON.stringify(profsDB));
+
+            document.getElementById('modal-venda').classList.add('hidden');
+            atualizarUI();
+            alert("Venda Lançada!");
+        }
+
+        function finalizarAtendimento(h, cliente) {
+            if(confirm(`Fechar atendimento de ${cliente}?`)) {
+                abrirModalVenda();
+                const d = document.getElementById('data-seletor').value;
+                let agenda = JSON.parse(localStorage.getItem('barbearia_agenda')) || {};
+                delete agenda[d][profId][h];
+                localStorage.setItem('barbearia_agenda', JSON.stringify(agenda));
+                renderAgenda();
+            }
+        }
+
+        function logout() { localStorage.removeItem('prof_logado_id'); window.location.href = 'index.html'; }
+    </script>
+</body>
+</html>
